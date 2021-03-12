@@ -1962,6 +1962,23 @@ gr.ar.fn2(lfcTable.rank$RankPlot.log[[1]],
 
 ```
 
+## Saving difference tables 
+
+
+```{r saving_diff_csv}
+
+for (x in my.param) {
+
+    write.csv(subset(lfcTable.rank, Metric == x)$data, 
+              paste0(x, "_difference_SA_ST.csv")) 
+
+}
+
+
+
+```
+
+
 
 ## Saving gene rankings 
 
