@@ -1967,10 +1967,34 @@ gr.ar.fn2(lfcTable.rank$RankPlot.log[[1]],
 
 ```{r saving_diff_csv}
 
+
 for (x in my.param) {
 
-    write.csv(subset(lfcTable.rank, Metric == x)$data, 
-              paste0(x, "_difference_SA_ST.csv")) 
+    # Subset by metric
+    df <- subset(lfcTable.percent, Metric == x)[, 1:5]
+
+    # Determine whether ascending or descending order is needed 
+    if (x == "padj") {
+
+        # Descending for padj
+        ordering <- F 
+
+    } else {
+
+        # Ascending otherwise
+        ordering <- T 
+
+    }
+
+    # Rearrange the data frame using the function rank.fn() set previously
+    df <- rank.fn(df, abs(df$Percent), desc=ordering) 
+
+    # Print the output data frame
+    print(head(df)) 
+
+    # Save as a csv file
+    write.csv(df, 
+              paste0(x, "_difference_SA_ST.csv"))
 
 }
 
