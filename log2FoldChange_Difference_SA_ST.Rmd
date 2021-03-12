@@ -1,0 +1,216 @@
+---
+output: html_document
+title: "BaseMean Analysis in mouse CD4-positive T cells"
+author: "Mira Sohn" 
+---
+
+
+## Alignment & DE analysis
+
+### - Alignment: [Link](https://github.com/Mira0507/mouse_cd4)
+
+### - DE analysis: [Link I](https://github.com/Mira0507/mouse_cd4/blob/master/DE_EnsDb.Rmd), [Link II](https://github.com/Mira0507/mouse_cd4_reanalysis/blob/master/DE_EnsDb.Rmd)
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(
+    warning=FALSE,
+    message=FALSE
+    )
+```
+
+## Loading packages
+
+
+```{r loading_packages}
+library(data.table)
+library(tidyverse)
+library(rmarkdown)
+library(ggplot2)
+library(gridExtra)
+library(ggrepel)
+```
+
+## Importing and cleaning ranking data
+
+```{r data_import}
+
+
+# Import data
+diff.high <- fread("m.log2FoldChange_SA_ST.csv")[1:50, -1][, Group := "High"]
+diff.low <- tail(fread("m.log2FoldChange_SA_ST.csv"), 50)[, -1][, Group := "Low"]
+
+# Combine two datasets
+diff <- rbind(diff.high, diff.low) 
+
+# Nest by Group
+diff.nested <- diff %>% 
+    group_by(Group) %>% 
+    nest()
+
+
+
+```
+
+### Relationship between Difference & Percent
+
+#### - Difference: Salmon - STAR 
+
+#### - Percent: 100 x (Salmon - STAR) / (Salmon + STAR) 
+
+
+
+
+
+```{r diff_and_percentdiff}
+
+
+# Create a vector storing the first and last values 
+vec.fn <- function(original.vec) { 
+
+    len.of.vec <- length(original.vec)
+
+    updated.vec <- c(round(original.vec[1], 5), 
+                     rep("", len.of.vec-2),
+                     round(original.vec[len.of.vec], 5)) 
+
+    return(updated.vec)
+}
+
+
+
+
+
+# Set a function plotting relationship between difference and percent difference
+plot1.fn <- function(df, title) {
+
+    ggplot(df, aes(x=abs(Difference), 
+                   y=abs(Percent))) + 
+
+geom_point() + 
+theme_bw() +
+geom_smooth(method="lm", se=F) + 
+scale_x_log10() + 
+xlab("Absolute Difference (Salmon - STAR)") + 
+ylab("100 x Absolute Difference / (Salmon + STAR)") + 
+ggtitle(paste("Relationship between Absolute Difference and Absolute Percent Difference in", title, "Percent Difference Genes\n(with R-squared)")) +
+geom_text(mapping=aes(x=Inf, y=Inf, label=diff.perdiff.rsq), 
+          vjust=2, hjust=1.1, color="red", size=4) 
+
+}
+
+
+# Model linear regression, extract p-values, and unnest
+diff.nested <- diff.nested %>%
+    mutate(diff.perdiff.mod=map(data, ~ lm(abs(Percent) ~ abs(Difference), data=.x)),
+           diff.perdiff.summ=map(diff.perdiff.mod, ~ summary(.x)),
+           diff.perdiff.coef=map(diff.perdiff.summ, ~ .x$coefficients[2, 4]),
+           diff.perdiff.rsq=unlist(map(diff.perdiff.summ, ~ .x$r.squared))) %>% 
+    unnest(data, diff.perdiff.coef) 
+
+# Explore the data
+dim(diff.nested)
+head(diff.nested)
+
+
+# Add a column storing p-value for plotting
+diff.nested$diff.perdiff.pval <- vec.fn(diff.nested$diff.perdiff.coef)
+
+diff.nested$diff.perdiff.rsq <- vec.fn(diff.nested$diff.perdiff.rsq)
+
+# Renest by Group and add plots
+diff.nested <- diff.nested %>%
+    group_by(Group) %>%
+    nest() %>% 
+    mutate(diff.perdiff.plot=map(data, ~ plot1.fn(.x, Group)))
+
+
+# Print the plots
+diff.nested$diff.perdiff.plot[[1]]
+diff.nested$diff.perdiff.plot[[2]]
+
+```
+
+
+## Exploring Variation Metrics
+
+
+
+#### - Variants: Genetic Variation (e.g. SNPs) 
+
+#### - Dfam.conserved: pre-calculated and conserved repeat elements (detected by [Dfam](https://www.dfam.org/home) database) 
+
+#### - Dfam.sample: simple repeat elements (detected by Dfam)
+
+
+
+```{r explore_metrics, fig.width=12, fig.height=10}
+
+
+# Set a function calculating pvalue via two-tailed t-test
+ttest.fn <- function(response.variable) {
+
+    pval <- t.test(abs(response.variable) ~ Group, data=diff)$p.value
+    pvec <- c(as.character(pval), rep("", 99))
+
+    return(pvec)
+}
+
+
+# Create a vector storing the pvalues (character vector)
+pval.vec <- c(ttest.fn(diff$Percent),
+              ttest.fn(diff$Difference),
+              ttest.fn(diff$num.trans), 
+              ttest.fn(diff$Variants),
+              ttest.fn(diff$Dfam.conserved),
+              ttest.fn(diff$Dfam.simple))
+
+
+
+
+
+# Clean the data frame 
+diff <- diff %>% 
+    gather(Metrics, Value, Percent, 
+           Difference, num.trans, Variants, 
+           Dfam.conserved, Dfam.simple)
+
+diff$Metrics <- factor(diff$Metrics, levels=unique(diff$Metrics))
+
+
+# Add a column storing pvalues
+diff$metrics.pval <- pval.vec
+
+# Explore the output after data cleaning
+head(diff)
+dim(diff)
+
+# Plot 
+ggplot(diff, aes(x=Group, y=abs(Value), color=Group)) + 
+    geom_jitter(alpha=0.7) + 
+    geom_boxplot(color="black", fill="grey", alpha=0) + 
+    facet_wrap(~Metrics, scales="free_y") + 
+    theme_bw() + 
+    theme(strip.text.x=element_text(size=11),
+          axis.text.x=element_text(size=10)) + 
+    scale_y_log10() + 
+    geom_text(aes(x=Inf, y=Inf, label=metrics.pval), 
+              vjust=2, hjust=1.1, color="black", size=4) + 
+ggtitle("Comparison between High vs Low Difference Genes in Various Metrics\n(with P-Value from Two-Tailed T-Test)") + 
+ylab("Value")
+
+
+
+
+
+
+```
+
+
+
+## Session info
+
+```{r session_info}
+
+sessionInfo()
+
+```
