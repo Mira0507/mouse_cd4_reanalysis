@@ -35,9 +35,12 @@ library(ggrepel)
 ```{r data_import}
 
 
+# Assign an input file name
+filename <- "m.baseMean_difference_SA_ST.csv"
+
 # Import data
-diff.high <- fread("m.baseMean_SA_ST.csv")[1:50, -1][, Group := "High"]
-diff.low <- tail(fread("m.baseMean_SA_ST.csv"), 50)[, -1][, Group := "Low"]
+diff.high <- fread(filename)[1:50, -1][, Group := "High % Difference"]
+diff.low <- tail(fread(filename), 50)[, -1][, Group := "Low % Difference"]
 
 # Combine two datasets
 diff <- rbind(diff.high, diff.low) 
