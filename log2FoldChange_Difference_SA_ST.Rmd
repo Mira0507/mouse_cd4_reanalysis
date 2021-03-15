@@ -1,6 +1,6 @@
 ---
 output: html_document
-title: "BaseMean Analysis in mouse CD4-positive T cells"
+title: "Log2FoldChange Analysis in mouse CD4-positive T cells"
 author: "Mira Sohn" 
 ---
 
@@ -34,10 +34,14 @@ library(ggrepel)
 
 ```{r data_import}
 
+# Assign an input file name
+filename <- "m.log2FoldChange_difference_SA_ST.csv"
 
 # Import data
-diff.high <- fread("m.log2FoldChange_SA_ST.csv")[1:50, -1][, Group := "High"]
-diff.low <- tail(fread("m.log2FoldChange_SA_ST.csv"), 50)[, -1][, Group := "Low"]
+diff.high <- fread(filename)[1:50, -1][, Group := "High % Difference"]
+diff.low <- tail(fread(filename), 50)[, -1][, Group := "Low % Difference"]
+
+
 
 # Combine two datasets
 diff <- rbind(diff.high, diff.low) 
