@@ -912,10 +912,10 @@ comp.scatter.fn <- function(df,
                         label=Rsquared.label)) + 
         geom_point(alpha=0.5) + 
         theme_bw() + 
-        ggtitle(paste("Comparison in", met, "\n(with R-squared)")) + 
+        ggtitle(paste("Comparison in", met, "\n(with R-Squared)")) + 
         geom_text(size=5, 
                   mapping=aes(x=Inf, y=Inf), 
-                  vjust=2, hjust=3.5, color="black") +
+                  vjust=2, hjust=3.8, color="black") +
 geom_abline(slope=1, size=0.5, linetype="dashed", color="black") + 
 scale_color_gradient(low="blue", high="red") +
 facet_wrap(~Shrinkage, scales="free") + 
@@ -1032,7 +1032,7 @@ for (i in 1:nrow(lfcTable.rank)) {
                           df$rank.Counts,
                           lfcTable.rank$Metric[i], 
                           "TPM", "Counts") + 
-ggtitle(paste("Comparison in", lfcTable.rank$Metric[i], "Rank")) 
+ggtitle(paste("Comparison in", lfcTable.rank$Metric[i], "Rank\n(with R-Squared)")) 
 
 print(pl)
 
