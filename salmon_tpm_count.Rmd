@@ -935,6 +935,11 @@ for (i in 1:nrow(lfcTable.comp)) {
 
     df <- lfcTable.comp$data[[i]]
 
+    
+    df$Shrinkage <- factor(df$Shrinkage, levels=unique(df$Shrinkage))
+
+
+
     print(comp.scatter.fn(df,
                           df$TPM,
                           df$Counts,
@@ -1025,7 +1030,8 @@ lfcTable.rank <- lfcTable.rank %>%
 for (i in 1:nrow(lfcTable.rank)) {
 
     df <- lfcTable.rank$data[[i]]
-
+    
+    df$Shrinkage <- factor(df$Shrinkage, levels=unique(df$Shrinkage))
 
     pl <- comp.scatter.fn(df,
                           df$rank.TPM,
