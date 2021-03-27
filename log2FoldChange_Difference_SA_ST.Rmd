@@ -41,10 +41,9 @@ filename <- "m.log2FoldChange_difference_SA_ST.csv"
 diff.high <- fread(filename)[1:50, -1][, Group := "High % Difference"]
 diff.low <- tail(fread(filename), 50)[, -1][, Group := "Low % Difference"]
 
-
-
 # Combine two datasets
-diff <- rbind(diff.high, diff.low) 
+diff <- rbind(diff.high, diff.low) %>%
+    dplyr::select(-starts_with("Dfam"))
 
 # Nest by Group
 diff.nested <- diff %>% 
@@ -135,22 +134,19 @@ diff.nested$diff.perdiff.plot[[2]]
 ```
 
 
-## Exploring Variation Metrics
+## Exploring Variables 
 
 
 
-#### - Variants: Genetic Variation (e.g. SNPs) 
+#### - Variant.Allels: Genetic Variation (e.g. SNPs) 
 
-#### - Dfam.conserved: pre-calculated and conserved repeat elements (detected by [Dfam](https://www.dfam.org/home) database) 
+#### - Repetitive.Elements: found by [Tandem Repeats Finder](https://tandem.bu.edu/trf/trf.html) 
 
-#### - Dfam.sample: simple repeat elements (detected by Dfam)
-
-
-
-```{r explore_metrics, fig.width=12, fig.height=10}
+#### - **Tandem Repeats Finder**: "Tandem repeats finder: a program to analyze DNA sequences", Nucleic Acids Research, Volume 27, Issue 2, 1 January 1999, Pages 573–580
 
 
 
+```{r explore_variables, fig.width=12, fig.height=10}
 
 
 # Set a function calculating pvalue via two-tailed t-test
@@ -168,17 +164,15 @@ pval.vec <- c(ttest.fn(diff$Percent),
               ttest.fn(diff$Difference),
               ttest.fn(diff$num.trans), 
               ttest.fn(diff$Variants),
-              ttest.fn(diff$Dfam.conserved),
-              ttest.fn(diff$Dfam.simple))
+              ttest.fn(diff$TRF))
 
 
 # Rename columns for plotting
 metrics.rename <- c("Absolute.Difference", 
-                    "Num.Transcripts", 
+                    "Alternative.Transcripts", 
                     "Percent.Difference", 
                     "Variant.Alleles", 
-                    "Repetitive.Conserved", 
-                    "Repetitive.Simple")
+                    "Repetitive.Elements")
 
 colnames(diff) <- c("Metric", 
                     "GENEID", 
@@ -193,10 +187,9 @@ diff <- diff %>%
 
 metric.levels <- c("Percent.Difference",
                    "Absolute.Difference",
-                   "Num.Transcripts",
+                   "Alternative.Transcripts",
                    "Variant.Alleles",
-                   "Repetitive.Conserved",
-                   "Repetitive.Simple")
+                   "Repetitive.Elements")
 
 diff$Metrics <- factor(diff$Metrics, levels=metric.levels)
 
@@ -220,8 +213,10 @@ ggplot(diff, aes(x=Group, y=abs(Value), color=Group)) +
     scale_y_log10() + 
     geom_text(aes(x=Inf, y=Inf, label=metrics.pval), 
               vjust=2, hjust=1.1, color="black", size=4) + 
-ggtitle("Comparison between High vs Low Difference Genes in Various Metrics\n(with P-Values from Two-Tailed T-Test)") + 
+ggtitle("Comparison between High vs Low Difference Genes in Diverse Variables\n(with P-Values from Two-Tailed T-Test)") + 
 ylab("Value")
+
+
 
 
 
